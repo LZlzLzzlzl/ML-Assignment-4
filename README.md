@@ -41,19 +41,19 @@
 **初始状态示例**（第0步）：
 ```python
 # 轨迹为空列表 []
-state = 50  # 初始位置P=50
+state = 50  # 当前状态（执行动作前的位置P=50）
 trajectory = []  # 空轨迹（初始状态）
 ```
 
 **中间状态示例**（第5步）：
 ```python
-# 轨迹包含前4步的历史记录
-state = 67  # 当前位置P=67
+# 轨迹包含前4步的历史记录，每个元素为(新状态, 动作, 奖励)
+state = 67  # 当前状态（执行动作前的位置P=67）
 trajectory = [
-    (50, 10, 0.15),   # 第0步：从50移动到60，奖励0.15
-    (60, -5, 0.23),   # 第1步：从60移动到55，奖励0.23
-    (55, 8, 0.18),    # 第2步：从55移动到63，奖励0.18
-    (63, 4, 0.12)     # 第3步：从63移动到67，奖励0.12
+    (60, 10, 0.15),   # 第0步：从50移动到60，执行动作10，奖励0.15
+    (55, -5, 0.23),   # 第1步：从60移动到55，执行动作-5，奖励0.23
+    (63, 8, 0.18),    # 第2步：从55移动到63，执行动作8，奖励0.18
+    (67, 4, 0.12)     # 第3步：从63移动到67，执行动作4，奖励0.12
 ]
 ```
 
@@ -112,13 +112,13 @@ class Solution:
 
 ## 📈 评分标准 (总分 20分)
 
-本次作业总分为 20 分。
+本次作业总分为 20 分。评分采用**双重评分机制**：
 
 ### 评分规则（基于TotalReward）
 根据TotalReward得分进行线性插值计算基础分数：
 
 #### 评分基准点
-- **基准线**: TotalReward = 20 → **6分**
+- **基准线**: TotalReward ≤ 20 → **6分**
 - **满分线**: TotalReward = 94.61 → **10分**
 - **排行榜前10%线**: TotalReward = FullScoreReward（排行榜前10%的最低分） → **20分**
 
@@ -133,6 +133,13 @@ class Solution:
 
 ---
 
+## ⚙️ 环境要求
+
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
+![Requests](https://img.shields.io/badge/Requests-2.31+-green?style=for-the-badge&logo=python&logoColor=white)
 
 </div>
 
