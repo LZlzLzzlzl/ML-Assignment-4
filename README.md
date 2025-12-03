@@ -3,12 +3,12 @@
 # Assignment 4: 强化学习
 
 [![Python](https://img.shields.io/badge/Python-3.8-blue.svg)](https://www.python.org/)
-[![Deadline](https://img.shields.io/badge/Deadline-Dec%2015-red.svg)](http://101.132.193.95:3000)
+[![Deadline](https://img.shields.io/badge/Deadline-Dec%2014-red.svg)](http://101.132.193.95:3000)
 [![License](https://img.shields.io/badge/License-Educational-green.svg)](LICENSE)
 
-**📅 截止日期：12月15日0:00** | **🏆 [查看排行榜](http://101.132.193.95:3000)** | **📋 Assignment ID: 04**
+**📅 截止日期：12月14日** | **🏆 [查看排行榜](http://101.132.193.95:3000)** | **📋 Assignment ID: 04**
 
-### 📤 提交要求:通过水杉平台提交
+### 📤 提交方式: 通过可执行文件提交
 
 ---
 
@@ -28,7 +28,34 @@
 ### 状态和动作
 - **状态**: 当前智能体位置 P
 - **动作**: 移动距离（整数，范围-99到99）
-- **轨迹**: 包含历史状态、动作和奖励的序列
+- **位置更新逻辑**: 当前位置 P 执行动作 action 后，新位置为 `P_new = P + action`。如果新位置超出轨道边界 [0, 99]，会触发反弹机制：
+  - 如果 `P_new < 0`：超出边界的距离除以2后反弹，即 `P_final = 0 + abs(P_new) // 2`
+  - 如果 `P_new > 99`：超出边界的距离除以2后反弹，即 `P_final = 99 - (P_new - 99) // 2`
+  - 最终位置会被限制在 [0, 99] 范围内
+- **轨迹**: 包含历史状态、动作和奖励的序列，每个元素为 (P, action, reward) 三元组
+- **奖励计算**: 奖励基于智能体P与目标球q之间的距离计算，距离越近奖励值越大
+
+
+#### 轨迹示例
+
+**初始状态示例**（第0步）：
+```python
+# 轨迹为空列表 []
+state = 50  # 初始位置P=50
+trajectory = []  # 空轨迹（初始状态）
+```
+
+**中间状态示例**（第5步）：
+```python
+# 轨迹包含前4步的历史记录
+state = 67  # 当前位置P=67
+trajectory = [
+    (50, 10, 0.15),   # 第0步：从50移动到60，奖励0.15
+    (60, -5, 0.23),   # 第1步：从60移动到55，奖励0.23
+    (55, 8, 0.18),    # 第2步：从55移动到63，奖励0.18
+    (63, 4, 0.12)     # 第3步：从63移动到67，奖励0.12
+]
+```
 
 ### 📊 离线数据集说明
 
@@ -52,30 +79,35 @@
 
 ## 💻 代码要求
 
-### 需要实现的函数
-在 `solution.py` 中实现 `Solution` 类的 `policy` 方法：
+### solution.py 代码要求
+在 `solution.py` 中实现 `Solution` 类：
 
 ```python
-def policy(self, state, trajectory):
-    """
-    实现你的策略函数
+class Solution:
+    def __init__(self):
+        """
+        初始化函数，设置评测模式
+        
+        模式设置：
+        - mode=0: 不提交到排行榜（用于本地测试）
+        - mode=1: 提交到排行榜（用于最终提交）
+        """
+        # 设置模式：0=不提交到排行榜，1=提交到排行榜
+        self.mode = 1
     
-    参数:
-        state: 当前状态（智能体位置P）
-        trajectory: 历史轨迹列表，每个元素为(P, action, reward)
-    
-    返回:
-        action: 要执行的动作（整数，范围-99到99）
-    """
-    # 你的策略实现
-    return action
-```
-
-### 模式设置
-```python
-def __init__(self):
-    # 设置模式：0=不提交到排行榜，1=提交到排行榜
-    self.mode = 1
+    def policy(self, state, trajectory):
+        """
+        实现你的策略函数
+        
+        参数:
+            state: 当前状态（智能体位置P）
+            trajectory: 历史轨迹列表，每个元素为(P, action, reward)三元组
+        
+        返回:
+            action: 要执行的动作（整数，范围-99到99）
+        """
+        # 你的策略实现
+        return action
 ```
 
 ## 📈 评分标准 (总分 20分)
@@ -86,11 +118,11 @@ def __init__(self):
 根据TotalReward得分进行线性插值计算基础分数：
 
 #### 评分基准点
-- **基准线1**: TotalReward = 20 → **6分**
-- **基准线2**: TotalReward = 94.61 → **10分**
+- **基准线**: TotalReward = 20 → **6分**
+- **满分线**: TotalReward = 94.61 → **10分**
 - **排行榜前10%线**: TotalReward = FullScoreReward（排行榜前10%的最低分） → **20分**
 
-#### 详细得分规则
+#### 基础得分规则
 
 | 场景 | 条件说明 | 基础得分 |
 | :--- | :--- | :--- |
@@ -101,6 +133,8 @@ def __init__(self):
 
 ---
 
+
+</div>
 
 ## 🚀 运行评测
 
@@ -135,18 +169,36 @@ $env:MAIN_CONTRIBUTOR="human"
 
 ### ▶️ 3. 运行评测
 
-**本次作业仅在水杉平台提交**：
+**多平台可执行文件**：
 
+根据你的操作系统选择相应的可执行文件：
+
+**🐧 Linux:**
 ```bash
 chmod +x evaluate-linux
 ./evaluate-linux
+```
+
+**🍎 macOS:**
+```bash
+chmod +x evaluate-macos
+./evaluate-macos
+```
+
+**🪟 Windows:**
+```cmd
+evaluate-win.exe
+```
+或者使用PowerShell:
+```powershell
+.\evaluate-win.exe
 ```
 
 **评测配置**：
 - **时间限制**: 60秒
 - **步数**: 200步
 - **评估指标**: 200步总奖励值
-- **提交平台**: 仅限水杉平台
+- **提交平台**: 支持水杉平台提交
 
 **输出示例**：
 ```
@@ -199,15 +251,16 @@ Final reward: 15.234567
 
 ### 📋 提交说明
 
-1. **提交频率**: 支持多次提交，系统记录最佳成绩
-2. **提交时间**: 截止日期前的所有提交均有效
-3. **成绩计算**: 以截止日期前获得的最高TotalReward为准
+1. **提交方式**: 运行对应平台的可执行文件进行提交
+2. **提交频率**: 支持多次提交，系统记录最佳成绩
+3. **提交时间**: 截止日期前的所有提交均有效
+4. **成绩计算**: 以截止日期前获得的最高TotalReward为准
 
 ---
 
 ### 🎉 祝你取得好成绩！
 
-**📅 记得在12月15日0:00前提交你的最佳成绩！**
+**📅 记得在截止日期前提交你的最佳成绩！**
 
 ---
 
