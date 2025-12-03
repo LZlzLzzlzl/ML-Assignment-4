@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'requirements.txt'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/main.yml'
   workflow_dispatch:
 
 permissions:
