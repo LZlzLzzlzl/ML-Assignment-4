@@ -90,7 +90,7 @@ trajectory = [
 ## 💻 代码要求
 
 ### solution.py 代码要求
-在 `solution.py` 中实现 `Solution` 类：
+在 `solution.py` 中实现 `Solution` 类的policy函数：
 
 ```python
 def policy(self, state, trajectory):
@@ -120,13 +120,13 @@ def policy(self, state, trajectory):
 
 ## 📈 评分标准 (总分 20分)
 
-本次作业总分为 20 分。评分采用**双重评分机制**：
+本次作业总分为 20 分。
 
 ### 评分规则（基于TotalReward）
 根据TotalReward得分进行线性插值计算基础分数：
 
 #### 评分基准点
-- **基准线**: TotalReward ≤ 20 → **6分**
+- **基准线**: TotalReward = 20 → **6分**
 - **满分线**: TotalReward = 94.61 → **10分**
 - **排行榜前10%线**: TotalReward = FullScoreReward（排行榜前10%的最低分） → **20分**
 
