@@ -164,7 +164,7 @@ conda activate ML
 
 ### ⚙️ 2. 设置环境变量
 
-**🐧 Linux:**
+**🐧 Linux/ 🍎 macOS:**
 
 ```bash
 export STUDENT_ID='你的学号'
@@ -188,10 +188,14 @@ $env:MAIN_CONTRIBUTOR="human"
 
 根据你的操作系统选择相应的可执行文件：
 
-**🐧 Linux:**
+**🐧 Linux/ 🍎 macOS:**
 ```bash
-chmod +x evaluate-linux
+
+chmod +x evaluate-linux     # Linux版本
 ./evaluate-linux
+
+chmod +x evaluate-macos     # macOS版本
+./evaluate-macos
 ```
 
 
