@@ -38,7 +38,7 @@ jobs:
         run: |
           echo "$EVALUATE_CODE" > evaluate.py
           if [ ! -s evaluate.py ]; then
-            echo "[ERROR] evaluate.py is empty!"
+            echo "[ERROR] evaluate.py is empty! Check EVALUATE_PY_CODE Secret"
             exit 1
           fi
         shell: bash
@@ -52,69 +52,59 @@ jobs:
       - name: Obfuscate evaluate.py using PyArmor
         run: |
           pyarmor obfuscate --output pyarmor_dist evaluate.py
-          echo "--- pyarmor_dist ---"
-          ls -R pyarmor_dist
         shell: bash
 
-      - name: Install dependencies
+      - name: Fix PyArmor path for packaging
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          cp pyarmor_dist/pytransform/_pytransform.so pyarmor_dist/
+        shell: bash
+
+      - name: Fix PyArmor path for packaging
+        if: matrix.os == 'windows-latest'
+        run: |
+          Copy-Item pyarmor_dist\pytransform\_pytransform.so pyarmor_dist\ -Force
+        shell: pwsh
+
+      - name: Install dependencies (including RL libraries)
         run: |
           pip install pyinstaller==5.13.2
-          if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
+          pip install -r requirements.txt
         shell: bash
 
-
       # ==========================
-      # LINUX BUILD
+      # LINUX BUILD (ubuntu-22.04)
       # ==========================
       - name: Build Linux Executable
         if: matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
-          echo "Linux pytransform contents:"
-          ls -R pyarmor_dist/pytransform
-
           pyinstaller --onefile \
             --name evaluate-linux \
             --hidden-import numpy \
-            --hidden-import numpy.core._multiarray_umath \
-            --hidden-import requests \
+            --hidden-import gym \
             --hidden-import scipy \
             --hidden-import matplotlib \
             --hidden-import seaborn \
-            --hidden-import gym \
-            --add-data "pyarmor_dist/pytransform:pytransform" \
             --add-data "pyarmor_dist:pyarmor_dist" \
             pyarmor_dist/evaluate.py
 
-          echo "--- dist ---"
-          ls -R dist
-
-
       # ==========================
-      # WINDOWS BUILD
+      # WINDOWS BUILD (windows-latest)
       # ==========================
       - name: Build Windows Executable
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          Write-Host "Windows pytransform contents:"
-          Get-ChildItem -Recurse pyarmor_dist\pytransform
-
           pyinstaller --onefile `
             --name evaluate-windows `
             --hidden-import numpy `
-            --hidden-import numpy.core._multiarray_umath `
-            --hidden-import requests `
+            --hidden-import gym `
             --hidden-import scipy `
             --hidden-import matplotlib `
             --hidden-import seaborn `
-            --hidden-import gym `
-            --add-data "pyarmor_dist\pytransform;pytransform" `
-            --add-data "pyarmor_dist;pyarmor_dist" `
+            --add-data "pyarmor_dist:pyarmor_dist" `
             pyarmor_dist\evaluate.py
-
-          Get-ChildItem -Recurse dist
-
 
       - name: Cleanup
         if: always()
@@ -125,21 +115,18 @@ jobs:
           rm -f *.spec || true
         shell: bash
 
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os == 'ubuntu-22.04' && 'evaluate-linux' || 'evaluate-windows' }}
           path: |
-            ${{ matrix.os == 'ubuntu-22.04' && 'dist/evaluate-linux' || '' }}
-            ${{ matrix.os == 'windows-latest' && 'dist/evaluate-windows.exe' || '' }}
+            ${{ matrix.os == 'ubuntu-22.04' && 'dist/evaluate-linux' || 'dist/evaluate-windows.exe' }}
           retention-days: 7
-
 
   release:
     needs: build
     runs-on: ubuntu-latest
-
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
