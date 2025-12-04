@@ -70,6 +70,7 @@ jobs:
         rm -f evaluate.py || true
         rm -rf build || true
         rm -f evaluate-linux.spec || true
+        rm -f solution.py || true
       shell: bash
 
     - name: Upload Linux artifact
@@ -132,6 +133,7 @@ jobs:
         Remove-Item -Path "evaluate.py" -Force -ErrorAction SilentlyContinue
         Remove-Item -Path "build" -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path "evaluate-windows.spec" -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "solution.py" -Force -ErrorAction SilentlyContinue
       shell: pwsh
 
     - name: Upload Windows artifact
@@ -194,6 +196,7 @@ jobs:
         rm -f evaluate.py || true
         rm -rf build || true
         rm -f evaluate-macos.spec || true
+        rm -f solution.py || true
       shell: bash
 
     - name: Upload macOS artifact
