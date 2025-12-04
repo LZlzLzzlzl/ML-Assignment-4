@@ -38,7 +38,7 @@ jobs:
         run: |
           echo "$EVALUATE_CODE" > evaluate.py
           if [ ! -s evaluate.py ]; then
-            echo "[ERROR] evaluate.py is empty! Check EVALUATE_PY_CODE Secret"
+            echo "[ERROR] evaluate.py is empty!"
             exit 1
           fi
         shell: bash
@@ -52,16 +52,14 @@ jobs:
       - name: Obfuscate evaluate.py using PyArmor
         run: |
           pyarmor obfuscate --output pyarmor_dist evaluate.py
-          ls -la pyarmor_dist
-          ls -la pyarmor_dist/pytransform
+          echo "--- pyarmor_dist ---"
+          ls -R pyarmor_dist
         shell: bash
 
       - name: Install dependencies
         run: |
           pip install pyinstaller==5.13.2
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt || true
-          fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
         shell: bash
 
 
@@ -73,11 +71,7 @@ jobs:
         shell: bash
         run: |
           echo "Linux pytransform contents:"
-          ls -la pyarmor_dist/pytransform
-
-          PYTRANSFORM_SO=$(ls pyarmor_dist/pytransform | grep .so | head -n 1)
-
-          echo "Detected Linux PyArmor SO file: $PYTRANSFORM_SO"
+          ls -R pyarmor_dist/pytransform
 
           pyinstaller --onefile \
             --name evaluate-linux \
@@ -88,11 +82,12 @@ jobs:
             --hidden-import matplotlib \
             --hidden-import seaborn \
             --hidden-import gym \
-            --add-binary "pyarmor_dist/pytransform/$PYTRANSFORM_SO:." \
+            --add-data "pyarmor_dist/pytransform:pytransform" \
             --add-data "pyarmor_dist:pyarmor_dist" \
             pyarmor_dist/evaluate.py
 
-          ls -la dist
+          echo "--- dist ---"
+          ls -R dist
 
 
       # ==========================
@@ -103,13 +98,7 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Windows pytransform contents:"
-          Get-ChildItem pyarmor_dist\pytransform
-
-          $dll = Get-ChildItem pyarmor_dist\pytransform | Where-Object {
-            $_.Extension -in ".dll", ".pyd"
-          } | Select-Object -First 1
-
-          Write-Host "Detected Windows PyArmor DLL: $($dll.Name)"
+          Get-ChildItem -Recurse pyarmor_dist\pytransform
 
           pyinstaller --onefile `
             --name evaluate-windows `
@@ -120,14 +109,14 @@ jobs:
             --hidden-import matplotlib `
             --hidden-import seaborn `
             --hidden-import gym `
-            --add-binary "pyarmor_dist\pytransform\$($dll.Name);." `
+            --add-data "pyarmor_dist\pytransform;pytransform" `
             --add-data "pyarmor_dist;pyarmor_dist" `
             pyarmor_dist\evaluate.py
 
-          Get-ChildItem dist -Recurse
+          Get-ChildItem -Recurse dist
 
 
-      - name: Cleanup temporary files
+      - name: Cleanup
         if: always()
         run: |
           rm -f evaluate.py || true
@@ -137,7 +126,7 @@ jobs:
         shell: bash
 
 
-      - name: Upload artifact (per OS)
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os == 'ubuntu-22.04' && 'evaluate-linux' || 'evaluate-windows' }}
@@ -150,7 +139,6 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Download Linux artifact
@@ -165,18 +153,10 @@ jobs:
           name: evaluate-windows
           path: evaluate-windows
 
-      - name: List downloaded files
-        run: |
-          echo "Linux:"
-          ls -la evaluate-linux
-          echo "Windows:"
-          ls -la evaluate-windows
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.run_number }}
-          name: Release v${{ github.run_number }}
           files: |
             evaluate-linux/evaluate-linux
             evaluate-windows/evaluate-windows.exe
