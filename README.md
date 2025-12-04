@@ -164,7 +164,7 @@ conda activate ML
 
 ### ⚙️ 2. 设置环境变量
 
-**🐧 Linux/macOS:**
+**🐧 Linux:**
 
 ```bash
 export STUDENT_ID='你的学号'
@@ -194,11 +194,6 @@ chmod +x evaluate-linux
 ./evaluate-linux
 ```
 
-**🍎 macOS:**
-```bash
-chmod +x evaluate-macos
-./evaluate-macos
-```
 
 **🪟 Windows:**
 ```cmd
