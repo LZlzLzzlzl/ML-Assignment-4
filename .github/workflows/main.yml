@@ -61,6 +61,7 @@ jobs:
                     --hidden-import gym \
                     --hidden-import stable_baselines3 \
                     --hidden-import shap \
+                    --exclude-module solution \
                     evaluate.py
       shell: bash
 
@@ -124,6 +125,7 @@ jobs:
                     --hidden-import gym `
                     --hidden-import stable_baselines3 `
                     --hidden-import shap `
+                    --exclude-module solution `
                     evaluate.py
       shell: pwsh
 
@@ -187,6 +189,7 @@ jobs:
                     --hidden-import gym \
                     --hidden-import stable_baselines3 \
                     --hidden-import shap \
+                    --exclude-module solution \
                     evaluate.py
       shell: bash
 
