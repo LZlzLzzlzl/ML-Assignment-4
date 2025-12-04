@@ -45,15 +45,27 @@ jobs:
     - name: Install PyArmor (Anti-Decompile Tool)
       run: |
         python -m pip install --upgrade pip
-        pip install pyarmor==7.7.4
+        pip install "pyarmor>=8.0.0"
         pyarmor --version
+        
+        if [[ "$RUNNER_OS" == "macOS" ]]; then
+          echo "Pre-downloading macOS core libraries..."
+          mkdir -p ~/.pyarmor/platforms/darwin/aarch64/3
+
+          curl -L --fail https://github.com/dashingsoft/pyarmor-core/raw/r52.6/platforms/darwin.arm64.3/_pytransform.dylib \
+            -o ~/.pyarmor/platforms/darwin/aarch64/3/_pytransform.dylib || echo "Download failed, will rely on PyArmor auto-download"
+        fi
       shell: bash
-      # On Windows this will run in bash provided by the runner (Git for Windows), which is OK for pip install.
 
     - name: Encrypt / obfuscate evaluate.py with PyArmor
       run: |
-        pyarmor obfuscate --output pyarmor_dist evaluate.py
-        ls -la pyarmor_dist || true
+
+        pyarmor gen --output pyarmor_dist evaluate.py
+        
+
+        echo "PyArmor output structure:"
+        find pyarmor_dist -type f -name "*.py" | head -10
+        ls -la pyarmor_dist/ || true
       shell: bash
 
     - name: Install dependencies (PyInstaller + requirements)
@@ -69,9 +81,15 @@ jobs:
     - name: Build with PyInstaller (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        PYTRANSFORM_DIR="pyarmor_dist/pytransform"
-        echo "PYTRANSFORM_DIR=$PYTRANSFORM_DIR"
-        # include entire pytransform dir as data to handle platform-specific binaries
+
+        ENTRY_SCRIPT="pyarmor_dist/dist/evaluate.py"
+        RUNTIME_DIR="pyarmor_dist/dist/pyarmor_runtime"
+        
+        echo "Entry script: $ENTRY_SCRIPT"
+        echo "Runtime dir: $RUNTIME_DIR"
+        
+        ls -la pyarmor_dist/dist/ || true
+        
         pyinstaller --onefile \
           --name evaluate-linux \
           --hidden-import numpy \
@@ -82,9 +100,8 @@ jobs:
           --hidden-import gym \
           --hidden-import requests.adapters \
           --hidden-import 'numpy.core._multiarray_umath' \
-          --add-data "$PYTRANSFORM_DIR:pytransform" \
-          --paths "pyarmor_dist" \
-          pyarmor_dist/evaluate.py
+          --add-data "$RUNTIME_DIR:pyarmor_runtime" \
+          "$ENTRY_SCRIPT"
         ls -la dist || true
       shell: bash
 
@@ -94,9 +111,14 @@ jobs:
     - name: Build with PyInstaller (macOS)
       if: matrix.os == 'macos-latest'
       run: |
-        PYTRANSFORM_DIR="pyarmor_dist/pytransform"
-        echo "PYTRANSFORM_DIR=$PYTRANSFORM_DIR"
-        # macOS also receives the pytransform dir as data
+        ENTRY_SCRIPT="pyarmor_dist/dist/evaluate.py"
+        RUNTIME_DIR="pyarmor_dist/dist/pyarmor_runtime"
+        
+        echo "Entry script: $ENTRY_SCRIPT"
+        echo "Runtime dir: $RUNTIME_DIR"
+        
+        ls -la pyarmor_dist/dist/ || true
+        
         pyinstaller --onefile \
           --name evaluate-macos \
           --hidden-import numpy \
@@ -106,9 +128,8 @@ jobs:
           --hidden-import seaborn \
           --hidden-import gym \
           --hidden-import 'numpy.core._multiarray_umath' \
-          --add-data "$PYTRANSFORM_DIR:pytransform" \
-          --paths "pyarmor_dist" \
-          pyarmor_dist/evaluate.py
+          --add-data "$RUNTIME_DIR:pyarmor_runtime" \
+          "$ENTRY_SCRIPT"
         ls -la dist || true
       shell: bash
 
@@ -119,12 +140,20 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        # Use PowerShell on Windows runner
+        # 使用PowerShell on Windows runner
         python -m pip install --upgrade pip
         python -m pip install pyinstaller==5.13.2
-        $PYTRANSFORM_DIR = "pyarmor_dist\\pytransform"
-        Write-Host "PYTRANSFORM_DIR=$PYTRANSFORM_DIR"
-        # On Windows, --add-data uses ';' between src and dest
+        
+
+        $ENTRY_SCRIPT = "pyarmor_dist\dist\evaluate.py"
+        $RUNTIME_DIR = "pyarmor_dist\dist\pyarmor_runtime"
+        
+        Write-Host "Entry script: $ENTRY_SCRIPT"
+        Write-Host "Runtime dir: $RUNTIME_DIR"
+        
+
+        Get-ChildItem -Path "pyarmor_dist\dist" -Recurse -ErrorAction SilentlyContinue
+
         pyinstaller --onefile `
           --name evaluate-windows `
           --hidden-import numpy `
@@ -134,9 +163,8 @@ jobs:
           --hidden-import seaborn `
           --hidden-import gym `
           --hidden-import "numpy.core._multiarray_umath" `
-          --add-data "$PYTRANSFORM_DIR;pytransform" `
-          --paths "pyarmor_dist" `
-          pyarmor_dist\\evaluate.py
+          --add-data "$RUNTIME_DIR;pyarmor_runtime" `
+          "$ENTRY_SCRIPT"
         Get-ChildItem -Path dist -Recurse
 
     - name: Cleanup all temporary files
@@ -152,7 +180,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.os == 'ubuntu-latest' && 'evaluate-linux' || matrix.os == 'macos-latest' && 'evaluate-macos' || 'evaluate-windows' }}
-        # path must point to the built executable for each platform
         path: |
           ${{ matrix.os == 'ubuntu-latest' && 'dist/evaluate-linux' || '' }}
           ${{ matrix.os == 'macos-latest' && 'dist/evaluate-macos' || '' }}
@@ -168,28 +195,28 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: evaluate-linux
-        path: evaluate-linux || true
+        path: evaluate-linux
 
     - name: Download macOS artifact
       uses: actions/download-artifact@v4
       with:
         name: evaluate-macos
-        path: evaluate-macos || true
+        path: evaluate-macos
 
     - name: Download Windows artifact
       uses: actions/download-artifact@v4
       with:
         name: evaluate-windows
-        path: evaluate-windows || true
+        path: evaluate-windows
 
     - name: List downloaded files
       run: |
         echo "==== Linux ===="
-        ls -la evaluate-linux || true
+        ls -la evaluate-linux/ || true
         echo "==== macOS ===="
-        ls -la evaluate-macos || true
+        ls -la evaluate-macos/ || true
         echo "==== Windows ===="
-        ls -la evaluate-windows || true
+        ls -la evaluate-windows/ || true
 
     - name: Create GitHub Release (attach executables)
       uses: softprops/action-gh-release@v1
