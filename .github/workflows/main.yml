@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-20.04, windows-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -65,25 +65,28 @@ jobs:
         shell: bash
 
       # ------------------------------
-      # Linux build (ubuntu-latest)
+      # Linux build (ubuntu-20.04)
       # ------------------------------
       - name: Build with PyInstaller (Linux)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-20.04'
         run: |
-          PYTRANSFORM_DIR="pyarmor_dist/pytransform"
-          echo "PYTRANSFORM_DIR=$PYTRANSFORM_DIR"
+          echo "Contents of pyarmor_dist/pytransform:"
+          ls -la pyarmor_dist/pytransform || true
+
           pyinstaller --onefile \
             --name evaluate-linux \
             --hidden-import numpy \
+            --hidden-import numpy.core._multiarray_umath \
             --hidden-import requests \
             --hidden-import scipy \
             --hidden-import matplotlib \
             --hidden-import seaborn \
             --hidden-import gym \
-            --hidden-import 'numpy.core._multiarray_umath' \
-            --add-data "$PYTRANSFORM_DIR:pytransform" \
-            --paths "pyarmor_dist" \
+            --add-data "pyarmor_dist:pyarmor_dist" \
+            --add-data "pyarmor_dist/pytransform:pytransform" \
             pyarmor_dist/evaluate.py
+
+          echo "Build finished, dist contents:"
           ls -la dist || true
         shell: bash
 
@@ -96,18 +99,20 @@ jobs:
         run: |
           $PYTRANSFORM_DIR = "pyarmor_dist\\pytransform"
           Write-Host "PYTRANSFORM_DIR=$PYTRANSFORM_DIR"
+
           pyinstaller --onefile `
             --name evaluate-windows `
             --hidden-import numpy `
+            --hidden-import numpy.core._multiarray_umath `
             --hidden-import requests `
             --hidden-import scipy `
             --hidden-import matplotlib `
             --hidden-import seaborn `
             --hidden-import gym `
-            --hidden-import "numpy.core._multiarray_umath" `
+            --add-data "pyarmor_dist;pyarmor_dist" `
             --add-data "$PYTRANSFORM_DIR;pytransform" `
-            --paths "pyarmor_dist" `
             pyarmor_dist\\evaluate.py
+
           Get-ChildItem -Path dist -Recurse
 
       - name: Cleanup all temporary files
@@ -122,9 +127,9 @@ jobs:
       - name: Upload artifact (per-OS)
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os == 'ubuntu-latest' && 'evaluate-linux' || 'evaluate-windows' }}
+          name: ${{ matrix.os == 'ubuntu-20.04' && 'evaluate-linux' || 'evaluate-windows' }}
           path: |
-            ${{ matrix.os == 'ubuntu-latest' && 'dist/evaluate-linux' || '' }}
+            ${{ matrix.os == 'ubuntu-20.04' && 'dist/evaluate-linux' || '' }}
             ${{ matrix.os == 'windows-latest' && 'dist/evaluate-windows.exe' || '' }}
           retention-days: 7
 
