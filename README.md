@@ -126,8 +126,8 @@ def policy(self, state, trajectory):
 根据TotalReward得分进行线性插值计算基础分数：
 
 #### 评分基准点
-- **基准线**: TotalReward = 20 → **6分**
-- **满分线**: TotalReward = 94.61 → **10分**
+- **基准线1**: TotalReward = 20 → **6分**
+- **基准线2**: TotalReward = 94.61 → **10分**
 - **排行榜前10%线**: TotalReward = FullScoreReward（排行榜前10%的最低分） → **20分**
 
 #### 基础得分规则
